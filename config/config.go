@@ -1,0 +1,72 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+
+	"github.com/joho/godotenv"
+)
+
+type Config struct {
+	DB     DBConfig
+	JWT    JWTConfig
+	Server ServerConfig
+}
+
+type DBConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Name     string
+	SSLMode  string
+}
+
+type JWTConfig struct {
+	Secret          string
+	ExpirationHours int
+}
+
+type ServerConfig struct {
+	Port string
+}
+
+func Load() (*Config, error) {
+	_ = godotenv.Load()
+	jwtExp, err := strconv.Atoi(getEnv("JWT_EXPIRATION_HOURS", "24"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWT_EXPIRATION_HOURS: %w", err)
+	}
+	return &Config{
+		DB: DBConfig{
+			Host:     getEnv("DB_HOST", "localhost"),
+			Port:     getEnv("DB_PORT", "5432"),
+			User:     getEnv("DB_USER", "postgres"),
+			Password: getEnv("DB_PASSWORD", "postgres"),
+			Name:     getEnv("DB_NAME", "workout_tracker"),
+			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		JWT: JWTConfig{
+			Secret:          getEnv("JWT_SECRET", "change-me"),
+			ExpirationHours: jwtExp,
+		},
+		Server: ServerConfig{
+			Port: getEnv("SERVER_PORT", "8080"),
+		},
+	}, nil
+}
+
+func (c *DBConfig) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		c.Host, c.Port, c.User, c.Password, c.Name, c.SSLMode,
+	)
+}
+
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
