@@ -1,0 +1,424 @@
+definitions:
+  model.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  model.CreateExerciseRequest:
+    properties:
+      description:
+        type: string
+      muscle_group:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  model.CreateSetRequest:
+    properties:
+      exercise_id:
+        type: integer
+      reps:
+        minimum: 1
+        type: integer
+      weight_kg:
+        minimum: 0
+        type: number
+    required:
+    - exercise_id
+    - reps
+    type: object
+  model.CreateWorkoutRequest:
+    properties:
+      date:
+        description: YYYY-MM-DD
+        type: string
+      notes:
+        type: string
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  model.Exercise:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      muscle_group:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  model.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.ProgressPoint:
+    properties:
+      date:
+        type: string
+      max_weight:
+        type: number
+      total_reps:
+        type: integer
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  model.Set:
+    properties:
+      created_at:
+        type: string
+      exercise_id:
+        type: integer
+      exercise_name:
+        type: string
+      id:
+        type: integer
+      reps:
+        type: integer
+      weight_kg:
+        type: number
+      workout_id:
+        type: integer
+    type: object
+  model.StatsSummary:
+    properties:
+      total_sets:
+        type: integer
+      total_weight_kg:
+        type: number
+      total_workouts:
+        type: integer
+      workouts_this_week:
+        type: integer
+    type: object
+  model.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  model.Workout:
+    properties:
+      created_at:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      sets:
+        items:
+          $ref: '#/definitions/model.Set'
+        type: array
+      title:
+        type: string
+      user_id:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вход
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Регистрация
+      tags:
+      - auth
+  /exercises:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Exercise'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Список упражнений
+      tags:
+      - exercises
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Упражнение
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Exercise'
+      security:
+      - BearerAuth: []
+      summary: Создать упражнение
+      tags:
+      - exercises
+  /exercises/{id}:
+    delete:
+      parameters:
+      - description: ID упражнения
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить упражнение
+      tags:
+      - exercises
+  /stats/progress:
+    get:
+      parameters:
+      - description: ID упражнения
+        in: query
+        name: exercise_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ProgressPoint'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Прогресс по упражнению
+      tags:
+      - stats
+  /stats/summary:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.StatsSummary'
+      security:
+      - BearerAuth: []
+      summary: Общая статистика
+      tags:
+      - stats
+  /workouts:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Workout'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: История тренировок
+      tags:
+      - workouts
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Тренировка
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateWorkoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Workout'
+      security:
+      - BearerAuth: []
+      summary: Создать тренировку
+      tags:
+      - workouts
+  /workouts/{id}:
+    get:
+      parameters:
+      - description: ID тренировки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Workout'
+      security:
+      - BearerAuth: []
+      summary: Детали тренировки
+      tags:
+      - workouts
+  /workouts/{id}/sets:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID тренировки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Подход
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateSetRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Set'
+      security:
+      - BearerAuth: []
+      summary: Добавить подход
+      tags:
+      - workouts
+  /workouts/{id}/sets/{setId}:
+    delete:
+      parameters:
+      - description: ID тренировки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID подхода
+        in: path
+        name: setId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить подход
+      tags:
+      - workouts
+swagger: "2.0"

@@ -1,4 +1,6 @@
 .env
+.env.docker
+.env.*
 .DS_Store
 *.log
 *.tmp

@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/Alexandr20i/workout-tracker/config"
+	_ "github.com/Alexandr20i/workout-tracker/docs" // сгенерированные swagger docs
 	"github.com/Alexandr20i/workout-tracker/internal/handler"
 	"github.com/Alexandr20i/workout-tracker/internal/middleware"
 	"github.com/Alexandr20i/workout-tracker/internal/repository"
@@ -13,9 +16,24 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
+// @title           Workout Tracker API
+// @version         1.0
+// @description     REST API для отслеживания тренировок
+// @host            localhost:8080
+// @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
+	// Настраиваем slog — JSON логи в stdout
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config error: %v", err)
@@ -23,34 +41,35 @@ func main() {
 
 	db, err := sqlx.Connect("postgres", cfg.DB.DSN())
 	if err != nil {
-		log.Fatalf("db connect error: %v", err)
+		slog.Error("db connect error", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
-	log.Println("✅ Connected to PostgreSQL")
+	slog.Info("connected to PostgreSQL")
 
-	// Репозитории
 	userRepo := repository.NewUserRepository(db)
 	exerciseRepo := repository.NewExerciseRepository(db)
 	workoutRepo := repository.NewWorkoutRepository(db)
 	setRepo := repository.NewSetRepository(db)
 	statsRepo := repository.NewStatsRepository(db)
 
-	// Хендлеры
 	authHandler := handler.NewAuthHandler(userRepo, cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 	exerciseHandler := handler.NewExerciseHandler(exerciseRepo)
 	workoutHandler := handler.NewWorkoutHandler(workoutRepo, setRepo)
 	statsHandler := handler.NewStatsHandler(statsRepo)
 
-	// Роутер
 	r := chi.NewRouter()
-	r.Use(chiMiddleware.Logger)
-	r.Use(chiMiddleware.Recoverer)
+	r.Use(middleware.Logger)       // наш slog middleware
+	r.Use(chiMiddleware.Recoverer) // ловим панику
 
-	// Публичные маршруты
+	// Swagger UI — открывай в браузере http://localhost:8080/swagger/
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	))
+
 	r.Post("/auth/register", authHandler.Register)
 	r.Post("/auth/login", authHandler.Login)
 
-	// Защищённые маршруты
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Auth(cfg.JWT.Secret))
 
@@ -71,6 +90,7 @@ func main() {
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Server.Port)
-	log.Printf("🚀 Server running on http://localhost%s", addr)
+	slog.Info("server started", "addr", "http://localhost"+addr)
+	slog.Info("swagger UI", "addr", "http://localhost"+addr+"/swagger/")
 	log.Fatal(http.ListenAndServe(addr, r))
 }

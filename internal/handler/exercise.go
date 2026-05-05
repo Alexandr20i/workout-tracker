@@ -23,6 +23,13 @@ func NewExerciseHandler(repo *repository.ExerciseRepository) *ExerciseHandler {
 }
 
 // GET /exercises
+// List godoc
+// @Summary      Список упражнений
+// @Tags         exercises
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {array} model.Exercise
+// @Router       /exercises [get]
 func (h *ExerciseHandler) List(w http.ResponseWriter, r *http.Request) {
 	list, err := h.repo.ListByUser(middleware.GetUserID(r))
 	if err != nil {
@@ -33,6 +40,15 @@ func (h *ExerciseHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /exercises
+// Create godoc
+// @Summary      Создать упражнение
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body body model.CreateExerciseRequest true "Упражнение"
+// @Success      201 {object} model.Exercise
+// @Router       /exercises [post]
 func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateExerciseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -53,6 +69,14 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // DELETE /exercises/{id}
+// Delete godoc
+// @Summary      Удалить упражнение
+// @Tags         exercises
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "ID упражнения"
+// @Success      200 {object} map[string]string
+// @Router       /exercises/{id} [delete]
 func (h *ExerciseHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

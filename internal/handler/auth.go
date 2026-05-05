@@ -26,6 +26,16 @@ func NewAuthHandler(users *repository.UserRepository, secret string, expH int) *
 }
 
 // POST /auth/register
+// Register godoc
+// @Summary      Регистрация
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body model.RegisterRequest true "Данные пользователя"
+// @Success      201 {object} model.AuthResponse
+// @Failure      400 {object} map[string]string
+// @Failure      409 {object} map[string]string
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req model.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -64,6 +74,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /auth/login
+// Login godoc
+// @Summary      Вход
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body model.LoginRequest true "Логин и пароль"
+// @Success      200 {object} model.AuthResponse
+// @Failure      401 {object} map[string]string
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req model.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

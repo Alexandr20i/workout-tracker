@@ -24,6 +24,13 @@ func NewWorkoutHandler(w *repository.WorkoutRepository, s *repository.SetReposit
 }
 
 // GET /workouts
+// List godoc
+// @Summary      История тренировок
+// @Tags         workouts
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {array} model.Workout
+// @Router       /workouts [get]
 func (h *WorkoutHandler) List(w http.ResponseWriter, r *http.Request) {
 	list, err := h.workouts.ListByUser(middleware.GetUserID(r))
 	if err != nil {
@@ -34,6 +41,15 @@ func (h *WorkoutHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /workouts
+// Create godoc
+// @Summary      Создать тренировку
+// @Tags         workouts
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body body model.CreateWorkoutRequest true "Тренировка"
+// @Success      201 {object} model.Workout
+// @Router       /workouts [post]
 func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateWorkoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -53,6 +69,14 @@ func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET /workouts/{id}
+// Get godoc
+// @Summary      Детали тренировки
+// @Tags         workouts
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "ID тренировки"
+// @Success      200 {object} model.Workout
+// @Router       /workouts/{id} [get]
 func (h *WorkoutHandler) Get(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -77,6 +101,15 @@ func (h *WorkoutHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 // DELETE /workouts/{id}
+// Delete godoc
+// @Summary      Удалить тренировку
+// @Tags         workouts
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "ID тренировки"
+// @Success      200 {object} map[string]string
+// @Router       /workouts/{id} [delete]
+
 func (h *WorkoutHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -91,6 +124,16 @@ func (h *WorkoutHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /workouts/{id}/sets
+// AddSet godoc
+// @Summary      Добавить подход
+// @Tags         workouts
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path int true "ID тренировки"
+// @Param        body body model.CreateSetRequest true "Подход"
+// @Success      201 {object} model.Set
+// @Router       /workouts/{id}/sets [post]
 func (h *WorkoutHandler) AddSet(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	workoutID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -124,6 +167,15 @@ func (h *WorkoutHandler) AddSet(w http.ResponseWriter, r *http.Request) {
 }
 
 // DELETE /workouts/{id}/sets/{setId}
+// DeleteSet godoc
+// @Summary      Удалить подход
+// @Tags         workouts
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path int true "ID тренировки"
+// @Param        setId path int true "ID подхода"
+// @Success      200 {object} map[string]string
+// @Router       /workouts/{id}/sets/{setId} [delete]
 func (h *WorkoutHandler) DeleteSet(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	workoutID, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
