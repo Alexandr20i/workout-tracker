@@ -22,7 +22,6 @@ func NewExerciseHandler(repo *repository.ExerciseRepository) *ExerciseHandler {
 	return &ExerciseHandler{repo: repo, validate: validator.New()}
 }
 
-// GET /exercises
 // List godoc
 // @Summary      Список упражнений
 // @Tags         exercises
@@ -39,7 +38,28 @@ func (h *ExerciseHandler) List(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, list)
 }
 
-// POST /exercises
+// Search godoc
+// @Summary      Поиск упражнений
+// @Tags         exercises
+// @Produce      json
+// @Security     BearerAuth
+// @Param        q query string true "Поисковый запрос"
+// @Success      200 {array} model.Exercise
+// @Router       /exercises/search [get]
+func (h *ExerciseHandler) Search(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		response.Error(w, http.StatusBadRequest, "q is required")
+		return
+	}
+	list, err := h.repo.Search(middleware.GetUserID(r), q)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "search failed")
+		return
+	}
+	response.JSON(w, http.StatusOK, list)
+}
+
 // Create godoc
 // @Summary      Создать упражнение
 // @Tags         exercises
@@ -59,7 +79,6 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	ex, err := h.repo.Create(middleware.GetUserID(r), &req)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "failed to create exercise")
@@ -68,7 +87,6 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, ex)
 }
 
-// DELETE /exercises/{id}
 // Delete godoc
 // @Summary      Удалить упражнение
 // @Tags         exercises

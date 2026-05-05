@@ -71,6 +71,19 @@ func (r *ExerciseRepository) Delete(id, userID int64) error {
 	return nil
 }
 
+// Search — полнотекстовый поиск по упражнениям
+func (r *ExerciseRepository) Search(userID int64, query string) ([]model.Exercise, error) {
+	var list []model.Exercise
+	return list, r.db.Select(&list, `
+		SELECT *
+		FROM exercises
+		WHERE user_id = $1
+		  AND search_vector @@ plainto_tsquery('russian', $2)
+		ORDER BY ts_rank(search_vector, plainto_tsquery('russian', $2)) DESC`,
+		userID, query,
+	)
+}
+
 // ===================== Workout =====================
 
 type WorkoutRepository struct{ db *sqlx.DB }

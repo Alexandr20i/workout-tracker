@@ -12,6 +12,7 @@ type Config struct {
 	DB     DBConfig
 	JWT    JWTConfig
 	Server ServerConfig
+	Redis  RedisConfig
 }
 
 type DBConfig struct {
@@ -32,12 +33,18 @@ type ServerConfig struct {
 	Port string
 }
 
+type RedisConfig struct {
+	Addr string
+}
+
 func Load() (*Config, error) {
 	_ = godotenv.Load()
+
 	jwtExp, err := strconv.Atoi(getEnv("JWT_EXPIRATION_HOURS", "24"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid JWT_EXPIRATION_HOURS: %w", err)
 	}
+
 	return &Config{
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -53,6 +60,9 @@ func Load() (*Config, error) {
 		},
 		Server: ServerConfig{
 			Port: getEnv("SERVER_PORT", "8080"),
+		},
+		Redis: RedisConfig{
+			Addr: getEnv("REDIS_ADDR", "localhost:6379"),
 		},
 	}, nil
 }
