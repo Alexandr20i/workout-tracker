@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"sync"
 
@@ -33,10 +34,28 @@ func getLimiter(ip string) *rate.Limiter {
 	return l
 }
 
+// getIP извлекает только IP без порта
+func getIP(r *http.Request) string {
+	// Сначала проверяем заголовки прокси
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		return ip
+	}
+	// Обрезаем порт из RemoteAddr
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return ip
+}
+
 // RateLimit — middleware ограничивает количество запросов с одного IP
 func RateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		limiter := getLimiter(r.RemoteAddr)
+		ip := getIP(r)
+		limiter := getLimiter(ip)
 		if !limiter.Allow() {
 			response.Error(w, http.StatusTooManyRequests, "too many requests")
 			return

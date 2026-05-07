@@ -19,7 +19,7 @@ type ExerciseHandler struct {
 	validate *validator.Validate
 }
 
-func NewExerciseHandler(repo *repository.ExerciseRepository) *ExerciseHandler {
+func NewExerciseHandler(repo repository.ExerciseRepo) *ExerciseHandler {
 	return &ExerciseHandler{repo: repo, validate: validator.New()}
 }
 
@@ -55,6 +55,7 @@ func (h *ExerciseHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 	list, err := h.repo.Search(middleware.GetUserID(r), q)
 	if err != nil {
+		slog.Error("search failed", "error", err)
 		response.Error(w, http.StatusInternalServerError, "search failed")
 		return
 	}
@@ -82,7 +83,7 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	ex, err := h.repo.Create(middleware.GetUserID(r), &req)
 	if err != nil {
-		slog.Error("failed to create exercise", "error", err) // <- добавили
+		slog.Error("failed to create exercise", "error", err)
 		response.Error(w, http.StatusInternalServerError, "failed to create exercise")
 		return
 	}

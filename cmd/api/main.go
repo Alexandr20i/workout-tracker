@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/Alexandr20i/workout-tracker/config"
 	_ "github.com/Alexandr20i/workout-tracker/docs"
@@ -13,6 +17,7 @@ import (
 	"github.com/Alexandr20i/workout-tracker/internal/handler"
 	"github.com/Alexandr20i/workout-tracker/internal/middleware"
 	"github.com/Alexandr20i/workout-tracker/internal/repository"
+	"github.com/Alexandr20i/workout-tracker/internal/worker"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
@@ -68,8 +73,15 @@ func main() {
 	workoutHandler := handler.NewWorkoutHandler(workoutRepo, setRepo)
 	statsHandler := handler.NewStatsHandler(statsRepo, redisClient)
 
+	// Воркер — каждую минуту для теста (в проде: 7 * 24 * time.Hour)
+	reportWorker := worker.NewReportWorker(statsRepo, userRepo, 1*time.Minute)
+	ctx, cancel := context.WithCancel(context.Background())
+	reportWorker.Start(ctx)
+
+	// Роутер
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.RateLimit)
 	r.Use(chiMiddleware.Recoverer)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
@@ -99,8 +111,40 @@ func main() {
 		r.Get("/stats/progress", statsHandler.Progress)
 	})
 
-	addr := fmt.Sprintf(":%s", cfg.Server.Port)
-	slog.Info("server started", "addr", "http://localhost"+addr)
-	slog.Info("swagger UI", "addr", "http://localhost"+addr+"/swagger/")
-	log.Fatal(http.ListenAndServe(addr, r))
+	// Graceful shutdown — сервер ждёт завершения текущих запросов
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", cfg.Server.Port),
+		Handler: r,
+	}
+
+	// Запускаем сервер в горутине
+	go func() {
+		addr := fmt.Sprintf("http://localhost:%s", cfg.Server.Port)
+		slog.Info("server started", "addr", addr)
+		slog.Info("swagger UI", "addr", addr+"/swagger/")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Ждём сигнал остановки (Ctrl+C или docker stop)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("shutting down...")
+
+	// Останавливаем воркер
+	cancel()
+	reportWorker.Stop()
+
+	// Даём серверу 10 секунд завершить текущие запросы
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("shutdown error", "error", err)
+	}
+
+	slog.Info("server stopped gracefully")
 }

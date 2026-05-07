@@ -19,7 +19,7 @@ type WorkoutHandler struct {
 	validate *validator.Validate
 }
 
-func NewWorkoutHandler(w *repository.WorkoutRepository, s *repository.SetRepository) *WorkoutHandler {
+func NewWorkoutHandler(w repository.WorkoutRepo, s repository.SetRepo) *WorkoutHandler {
 	return &WorkoutHandler{workouts: w, sets: s, validate: validator.New()}
 }
 

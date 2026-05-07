@@ -34,6 +34,11 @@ func (r *UserRepository) FindByID(id int64) (*model.User, error) {
 	return u, r.db.QueryRowx(`SELECT * FROM users WHERE id = $1`, id).StructScan(u)
 }
 
+func (r *UserRepository) ListAll() ([]model.User, error) {
+	var users []model.User
+	return users, r.db.Select(&users, `SELECT * FROM users ORDER BY id`)
+}
+
 // ===================== Exercise =====================
 
 type ExerciseRepository struct{ db *sqlx.DB }
