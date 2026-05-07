@@ -14,8 +14,8 @@ import (
 )
 
 type WorkoutHandler struct {
-	workouts *repository.WorkoutRepository
-	sets     *repository.SetRepository
+	workouts repository.WorkoutRepo
+	sets     repository.SetRepo
 	validate *validator.Validate
 }
 

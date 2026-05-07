@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -14,7 +15,7 @@ import (
 )
 
 type ExerciseHandler struct {
-	repo     *repository.ExerciseRepository
+	repo     repository.ExerciseRepo
 	validate *validator.Validate
 }
 
@@ -81,6 +82,7 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	ex, err := h.repo.Create(middleware.GetUserID(r), &req)
 	if err != nil {
+		slog.Error("failed to create exercise", "error", err) // <- добавили
 		response.Error(w, http.StatusInternalServerError, "failed to create exercise")
 		return
 	}

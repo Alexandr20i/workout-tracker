@@ -8,7 +8,8 @@ import (
 	"os"
 
 	"github.com/Alexandr20i/workout-tracker/config"
-	_ "github.com/Alexandr20i/workout-tracker/docs" // сгенерированные swagger docs
+	_ "github.com/Alexandr20i/workout-tracker/docs"
+	"github.com/Alexandr20i/workout-tracker/internal/cache"
 	"github.com/Alexandr20i/workout-tracker/internal/handler"
 	"github.com/Alexandr20i/workout-tracker/internal/middleware"
 	"github.com/Alexandr20i/workout-tracker/internal/repository"
@@ -28,7 +29,6 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// Настраиваем slog — JSON логи в stdout
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
@@ -47,22 +47,31 @@ func main() {
 	defer db.Close()
 	slog.Info("connected to PostgreSQL")
 
+	// Redis
+	redisClient, err := cache.NewRedis(cfg.Redis.Addr)
+	if err != nil {
+		slog.Error("redis connect error", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("connected to Redis")
+
+	// Репозитории
 	userRepo := repository.NewUserRepository(db)
 	exerciseRepo := repository.NewExerciseRepository(db)
 	workoutRepo := repository.NewWorkoutRepository(db)
 	setRepo := repository.NewSetRepository(db)
 	statsRepo := repository.NewStatsRepository(db)
 
+	// Хендлеры
 	authHandler := handler.NewAuthHandler(userRepo, cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 	exerciseHandler := handler.NewExerciseHandler(exerciseRepo)
 	workoutHandler := handler.NewWorkoutHandler(workoutRepo, setRepo)
-	statsHandler := handler.NewStatsHandler(statsRepo)
+	statsHandler := handler.NewStatsHandler(statsRepo, redisClient)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)       // наш slog middleware
-	r.Use(chiMiddleware.Recoverer) // ловим панику
+	r.Use(middleware.Logger)
+	r.Use(chiMiddleware.Recoverer)
 
-	// Swagger UI — открывай в браузере http://localhost:8080/swagger/
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	))
@@ -74,6 +83,7 @@ func main() {
 		r.Use(middleware.Auth(cfg.JWT.Secret))
 
 		r.Get("/exercises", exerciseHandler.List)
+		r.Get("/exercises/search", exerciseHandler.Search) // <- новый
 		r.Post("/exercises", exerciseHandler.Create)
 		r.Delete("/exercises/{id}", exerciseHandler.Delete)
 
