@@ -53,7 +53,8 @@ func main() {
 	slog.Info("connected to PostgreSQL")
 
 	// Redis
-	redisClient, err := cache.NewRedis(cfg.Redis.Addr)
+	redisClient, err := cache.NewRedis(cfg.Redis.Addr, cfg.Redis.URL)
+
 	if err != nil {
 		slog.Error("redis connect error", "error", err)
 		os.Exit(1)

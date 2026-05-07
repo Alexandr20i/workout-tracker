@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -12,11 +13,21 @@ type Redis struct {
 	client *redis.Client
 }
 
-func NewRedis(addr string) (*Redis, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr: addr,
-	})
-	// Проверяем соединение
+func NewRedis(addr, url string) (*Redis, error) {
+	var opts *redis.Options
+	var err error
+
+	// Если есть полный URL (Render) — используем его
+	if url != "" {
+		opts, err = redis.ParseURL(url)
+		if err != nil {
+			return nil, fmt.Errorf("invalid redis url: %w", err)
+		}
+	} else {
+		opts = &redis.Options{Addr: addr}
+	}
+
+	client := redis.NewClient(opts)
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, err
 	}
