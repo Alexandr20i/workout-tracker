@@ -27,48 +27,51 @@ REST API для отслеживания тренировок, написанн�
 
 ## 🗂️ Структура проекта
 
+```
 workout-tracker/
-├── cmd/api/
-│   └── main.go                  # Точка входа, роутер, graceful shutdown
+├── cmd/
+│   └── api/
+│       └── main.go
 ├── config/
-│   └── config.go                # Загрузка конфига из .env
+│   └── config.go
 ├── internal/
 │   ├── cache/
-│   │   └── redis.go             # Redis клиент
-│   ├── handler/                 # HTTP хендлеры
+│   │   └── redis.go
+│   ├── handler/
+│   │   ├── response/
+│   │   │   └── response.go
 │   │   ├── auth.go
 │   │   ├── exercise.go
-│   │   ├── workout.go
+│   │   ├── exercise_test.go
 │   │   ├── stats.go
-│   │   ├── exercise_test.go     # Unit тесты
-│   │   ├── workout_test.go
-│   │   └── response/
-│   │       └── response.go      # JSON хелперы
+│   │   ├── workout.go
+│   │   └── workout_test.go
 │   ├── middleware/
-│   │   ├── auth.go              # JWT middleware
-│   │   ├── logger.go            # slog middleware
-│   │   └── ratelimit.go         # Rate limiting
+│   │   ├── auth.go
+│   │   ├── logger.go
+│   │   └── ratelimit.go
 │   ├── model/
-│   │   └── model.go             # Структуры данных и DTO
+│   │   └── model.go
 │   ├── repository/
-│   │   ├── repository.go        # Слой работы с БД
-│   │   ├── interfaces.go        # Интерфейсы репозиториев
-│   │   └── mocks/               # Моки для тестов
-│   │       ├── exercise_mock.go
-│   │       ├── workout_mock.go
-│   │       └── set_mock.go
+│   │   ├── mocks/
+│   │   │   ├── exercise_mock.go
+│   │   │   ├── set_mock.go
+│   │   │   └── workout_mock.go
+│   │   ├── interfaces.go
+│   │   └── repository.go
 │   └── worker/
-│       └── report.go            # Фоновый воркер отчётов
+│       └── report.go
 ├── migrations/
-│   ├── 001_init.sql             # Схема БД
-│   └── 002_search.sql           # Полнотекстовый поиск
+│   ├── 001_init.sql
+│   └── 002_search.sql
 ├── .github/
 │   └── workflows/
-│       └── ci.yml               # GitHub Actions CI
+│       └── ci.yml
 ├── docker-compose.yml
 ├── Dockerfile
 ├── .env.example
 └── README.md
+```
 
 ## ⚡ Быстрый старт
 
